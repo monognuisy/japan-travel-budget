@@ -10,12 +10,18 @@ import RadioButtons from './components/RadioButtons';
 import { Input } from './components/ui/input';
 import { Checkbox } from './components/ui/checkbox';
 import { Separator } from './components/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from './components/ui/tooltip';
+import { CircleQuestionMarkIcon } from 'lucide-react';
 
 function App() {
   const [location, setLocation] = useState<LocationEntry['value']>('default');
   const [days, setDays] = useState<number>(1);
   const [people, setPeople] = useState<number>(1);
-  const [drink, setDrink] = useState<boolean>(true);
+  const [drink, setDrink] = useState<boolean>(false);
   const [busy, setBusy] = useState<boolean>(false);
   const [isRange, setIsRange] = useState<boolean>(false);
 
@@ -24,11 +30,13 @@ function App() {
   const locationCost = locationCosts[location];
   const dailyHotelCost = dailyHotelCosts[hotelPeopleKey];
 
+  const realDays = days === 1 ? 1 : days - 1;
+
   const airportFee = 30000; // 공항 - 도심간 왕복 이동 비용
   const flightPremium = busy ? extraOptionCosts.busy.total : 0;
-  const dailyFoodCost = 50000; // 일일 식비
+  const dailyFoodCost = days === 1 ? 30000 : 50000; // 일일 식비
   const dailyDrinkCost = drink ? extraOptionCosts.drink.daily : 0;
-  const dailyExtraCost = 5000;
+  const dailyExtraCost = 15000;
   const dailyTransportFee = 15000;
   const dailyBusyCost = busy ? extraOptionCosts.busy.daily : 0;
   const dailyExpense =
@@ -42,13 +50,15 @@ function App() {
       airportFee +
       flightPremium +
       alpha +
-      (dailyExpense + dailyHotelCost.min + dailyBusyCost) * (days - 1),
+      dailyExpense * realDays +
+      (days === 1 ? 0 : dailyHotelCost.min + dailyBusyCost) * (days - 1),
     max:
       locationCost.max +
       airportFee +
       flightPremium +
       alpha +
-      (dailyExpense + dailyHotelCost.max + dailyBusyCost) * (days - 1),
+      dailyExpense * realDays +
+      (days === 1 ? 0 : dailyHotelCost.max + dailyBusyCost) * (days - 1),
   };
 
   const totalCost = (totalCostRange.max + totalCostRange.min) / 2;
@@ -82,7 +92,7 @@ function App() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <h2 className="text-lg font-semibold">기간</h2>
+            <h2 className="text-lg font-semibold">기간 (일)</h2>
             <Input
               type="number"
               value={days}
@@ -107,8 +117,18 @@ function App() {
             <Input
               type="number"
               value={people}
-              onChange={(e) => setPeople(Number(e.target.value))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (value < 0) {
+                  setPeople(1);
+                } else if (value > 10) {
+                  setPeople(10);
+                } else {
+                  setPeople(value);
+                }
+              }}
               min={1}
+              max={10}
               className="w-24"
             />
           </div>
@@ -121,10 +141,10 @@ function App() {
                   id="drink"
                   checked={drink}
                   onCheckedChange={(checked) =>
-                    setDrink(checked === 'indeterminate' ? true : checked)
+                    setDrink(checked === 'indeterminate' ? false : checked)
                   }
                 />
-                <label htmlFor="drink">술을 마실 예정입니다.</label>
+                <label htmlFor="drink">술을 자주 마실 예정입니다.</label>
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -143,7 +163,7 @@ function App() {
         {/* 영수증 영역 */}
         <div className="flex flex-col mt-4">
           <div className="flex items-center gap-2 justify-between mb-8">
-            <h2 className="text-2xl font-bold">예상 경비</h2>
+            <h2 className="text-2xl font-bold">예상 경비 (1인당)</h2>
             <div className="flex items-center gap-2 text-sm">
               <Checkbox
                 id="isRange"
@@ -152,7 +172,20 @@ function App() {
                   setIsRange(checked === 'indeterminate' ? false : checked)
                 }
               />
-              <label htmlFor="isRange">범위 보기</label>
+              <label htmlFor="isRange" className="flex items-center gap-1">
+                범위 보기{' '}
+                <Tooltip>
+                  <TooltipTrigger>
+                    <CircleQuestionMarkIcon className="w-4 h-4 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      항공권과 숙박비 참고용입니다. 실제 계산은 평균가로
+                      진행됩니다.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </label>
             </div>
           </div>
 
@@ -174,7 +207,19 @@ function App() {
               <p>공항 왕복 교통비:</p>
               <p className="text-right">{airportFee.toLocaleString()}원</p>
 
-              <p>기타 비용:</p>
+              <p className="flex items-center gap-1">
+                기타 비용:
+                <Tooltip>
+                  <TooltipTrigger>
+                    <CircleQuestionMarkIcon className="w-4 h-4 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      쇼핑 등에 사용되는 비용이나, 예비 비용을 포함한 값입니다.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
               <p className="text-right">{alpha.toLocaleString()}원</p>
             </div>
           </div>
@@ -226,7 +271,20 @@ function App() {
           </p>
 
           <div className="flex flex-col gap-2 mt-4">
-            <h3 className="text-lg font-semibold">일일 지출</h3>
+            <h3 className="text-lg font-semibold flex items-center gap-1">
+              일일 지출
+              <Tooltip>
+                <TooltipTrigger>
+                  <CircleQuestionMarkIcon className="w-4 h-4 text-gray-400" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>
+                    공항 출/도착일을 합쳐 하루로 계산합니다. 즉, 당일치기가 아닌
+                    이상, n-1 일로 계산됩니다.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </h3>
 
             <div className="grid grid-cols-2 gap-2 text-sm">
               <p>식비:</p>
@@ -246,7 +304,17 @@ function App() {
                 {dailyTransportFee.toLocaleString()}원
               </p>
 
-              <p>추가 비용:</p>
+              <p className="flex items-center gap-1">
+                추가 비용:
+                <Tooltip>
+                  <TooltipTrigger>
+                    <CircleQuestionMarkIcon className="w-4 h-4 text-gray-400" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>여행에 필요한 간단한 물, 간식 비용입니다. </p>
+                  </TooltipContent>
+                </Tooltip>
+              </p>
               <p className="text-right">{dailyExtraCost.toLocaleString()}원</p>
             </div>
           </div>
@@ -254,9 +322,9 @@ function App() {
           <Separator className="my-2" />
           <p className="text-right text-sm">
             {dailyExpense.toLocaleString()}원{' '}
-            <span className="text-gray-500 font-semibold">× {days - 1}일</span>
+            <span className="text-gray-500 font-semibold">× {realDays}일</span>
             <span className="font-bold">
-              = {(dailyExpense * (days - 1)).toLocaleString()}원
+              = {(dailyExpense * realDays).toLocaleString()}원
             </span>
           </p>
 

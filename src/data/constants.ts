@@ -60,7 +60,7 @@ const dailyHotelCosts = {
 
 const extraOptionCosts = {
   drink: {
-    daily: 30000,
+    daily: 20000,
     total: 0,
   },
   busy: {
