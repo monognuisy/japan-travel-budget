@@ -10,6 +10,7 @@ import { Calculator, CopyrightIcon } from 'lucide-react';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { useTravelState } from './hooks/useTravelState';
 import { cn } from './lib/utils';
+import { useEffect } from 'react';
 
 function App() {
   const {
@@ -34,6 +35,25 @@ function App() {
 
   const isLargeScreen = useMediaQuery('(min-width: 1024px)');
 
+  // 뒤로가기 버튼으로 Sheet 닫기 기능
+  useEffect(() => {
+    const handlePopState = () => {
+      if (sheetOpen) {
+        setSheetOpen(false);
+      }
+    };
+
+    if (sheetOpen) {
+      // Sheet가 열렸을 때 history에 새로운 state 추가
+      window.history.pushState({ sheetOpen: true }, '');
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [sheetOpen, setSheetOpen]);
+
   const handleLocationChange = (value: LocationEntry['value']) => {
     setLocation(value);
   };
@@ -41,7 +61,7 @@ function App() {
   return (
     <div>
       <div
-        className="mx-auto max-w-[1200px] min-h-[calc(100vh-2rem)] sm:min-h-[calc(100vh-5rem)] 
+        className="mx-auto max-w-[1200px] min-h-[calc(100svh-2rem)] sm:min-h-[calc(100vh-5rem)] 
       bg-white border border-gray-300 rounded-lg shadow-lg
       flex flex-col"
       >
@@ -76,6 +96,7 @@ function App() {
 
             <div className="flex flex-col gap-2">
               <h2 className="text-lg font-semibold">기간 (일)</h2>
+              <p className="text-sm text-gray-500">최대 12일</p>
               <Input
                 type="number"
                 value={daysInput}
@@ -84,6 +105,8 @@ function App() {
                   const value = e.target.value;
                   if (value === '' || Number(value) < 1) {
                     setDays(1);
+                  } else if (Number(value) > 12) {
+                    setDays(12);
                   }
                 }}
                 min={1}
@@ -94,6 +117,7 @@ function App() {
 
             <div className="flex flex-col gap-2">
               <h2 className="text-lg font-semibold">인원</h2>
+              <p className="text-sm text-gray-500">최대 10명</p>
               <Input
                 type="number"
                 value={peopleInput}
@@ -102,6 +126,8 @@ function App() {
                   const value = e.target.value;
                   if (value === '' || Number(value) < 1) {
                     setPeople(1);
+                  } else if (Number(value) > 10) {
+                    setPeople(10);
                   }
                 }}
                 min={1}
