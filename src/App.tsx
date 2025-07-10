@@ -58,6 +58,27 @@ function App() {
     setLocation(value);
   };
 
+  // 자연수만 입력 가능하도록 하는 키 이벤트 핸들러
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // 소수점, 지수표기법, 음수 기호, 플러스 기호 방지
+    if (
+      e.key === '.' ||
+      e.key === 'e' ||
+      e.key === 'E' ||
+      e.key === '-' ||
+      e.key === '+'
+    ) {
+      e.preventDefault();
+    }
+  };
+
+  // 유효한 자연수인지 검증하는 함수
+  const isValidPositiveInteger = (value: string): boolean => {
+    if (value === '') return true; // 빈 문자열은 허용 (입력 중)
+    const num = Number(value);
+    return Number.isInteger(num) && num > 0;
+  };
+
   return (
     <div>
       <div
@@ -100,7 +121,13 @@ function App() {
               <Input
                 type="number"
                 value={daysInput}
-                onChange={(e) => setDaysInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (isValidPositiveInteger(value)) {
+                    setDaysInput(value);
+                  }
+                }}
                 onBlur={(e) => {
                   const value = e.target.value;
                   if (value === '' || Number(value) < 1) {
@@ -121,7 +148,13 @@ function App() {
               <Input
                 type="number"
                 value={peopleInput}
-                onChange={(e) => setPeopleInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (isValidPositiveInteger(value)) {
+                    setPeopleInput(value);
+                  }
+                }}
                 onBlur={(e) => {
                   const value = e.target.value;
                   if (value === '' || Number(value) < 1) {
